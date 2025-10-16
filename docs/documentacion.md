@@ -92,99 +92,165 @@ Calidad y notas
 
 Objetivo del script
 
-- Permitir al usuario consultar la documentación (`DOCUMENTACION.md`) y explorar los CSV disponibles mediante una interfaz de línea de comandos (CLI) segura y robusta.
+- Permitir al usuario consultar la documentación (`documentacion.md`) mediante una interfaz de línea de comandos (CLI) simple y robusta que detecta automáticamente las secciones del documento.
 
 Pasos de alto nivel
 
-1. Cargar `DOCUMENTACION.md`.
-2. Detectar los CSV presentes en la carpeta del script.
-3. Permitir acciones del usuario: mostrar secciones de la documentación, listar CSV, mostrar esquema de un CSV, mostrar filas de ejemplo, buscar texto en la documentación.
-4. Manejar errores (archivo faltante, CSV corrupto, codificación) y mostrar mensajes de ayuda.
+1. Cargar `documentacion.md` desde la raíz del proyecto.
+2. Parsear automáticamente las secciones (encabezados que empiezan con ##).
+3. Mostrar un menú numerado dinámico con todas las secciones encontradas.
+4. Permitir al usuario navegar por cualquier sección seleccionando su número.
+5. Mostrar el contenido formateado y esperar confirmación antes de volver al menú.
 
-Pseudocódigo (versión final)
+Pseudocódigo
 
 ```text
 Inicio
-  Cargar DOCUMENTACION.md en memoria
-  Detectar CSV disponibles en la carpeta del proyecto
-  Mientras el usuario no seleccione salir:
-    Mostrar menú con opciones
-    Leer opción
-    Si opción == mostrar resumen:
-      Imprimir sección "Tema, problema y solución"
-    Si opción == listar datasets:
-      Imprimir archivos CSV detectados
-    Si opción == esquema CSV:
-      Pedir nombre de archivo; leer encabezado y tipos inferidos; mostrar
-    Si opción == ejemplo CSV:
-      Pedir nombre de archivo; mostrar primeras N filas
-    Si opción == buscar en doc:
-      Pedir palabra clave; buscar y listar líneas encontradas
-    Si opción == pseudocódigo/diagrama:
-      Mostrar la sección de pseudocódigo y diagrama
+  Cargar documentacion.md en memoria
+  Detectar secciones principales (##)
+  Mientras sea Verdadero:
+    Mostrar menú numerado con todas las secciones encontradas
+    Leer opción del usuario
+    Si opción es válida:
+      Mostrar contenido de la sección seleccionada
+      Esperar Enter para continuar
+    Si opción == salir:
+      Terminar programa
+    Si opción inválida:
+      Mostrar mensaje de error
   Fin Mientras
 Fin
 ```
 
-Diagrama de componentes (ASCII)
+## Diagrama de flujo visual
 
-DOCUMENTACION.md <-- archivo principal con secciones
-|
-+--> script: `consulta_documentacion.py` (lee MD y CSVs)
-|
-+--> Operaciones: listar CSVs, leer esquema, mostrar ejemplos, búsqueda en doc
+A continuación se presenta el diagrama de flujo completo del programa:
+
+![Diagrama de Flujo](../images/diagrama-flujo.png)
+
+_Figura 1: Flujo de procesamiento de la documentación y navegación por menús_
 
 Flujo de datos simplificado
 
-CSV files (clientes.csv, productos.csv, ventas.csv, detalle_ventas.csv)
-|
-+--> `consulta_documentacion.py` (lectura con csv.DictReader)
-|
-+--> Salida al usuario (CLI): tablas de esquema, muestras de filas, resultados de búsqueda
+```text
+ ┌────────────────────────┐
+ │        INICIO          │
+ └───────────┬────────────┘
+             │
+             ▼
+ ┌────────────────────────┐
+ │ Cargar documentacion.md│
+ │ en memoria             │
+ └───────────┬────────────┘
+             │
+             ▼
+ ┌────────────────────────┐
+ │ Detectar secciones     │
+ │ principales ("##")     │
+ └───────────┬────────────┘
+             │
+             ▼
+      ┌───────────────┐
+      │     Bucle     │<─────────────────────────────────┐
+      │   WHILE TRUE  │                    │             │
+      └───────┬───────┘                    │             │
+              │                            │             │
+              ▼                            │             │
+  ┌───────────────────────┐                │             │
+  │     Mostrar menú      │                │             │
+  │     de secciones      │                │             │
+  └──────────┬────────────┘                │             │
+             │                             │             │
+             ▼                             │             │
+  ┌───────────────────────────┐            │             │
+  │ Leer opción del usuario   │            │             │
+  └──────────┬────────────────┘            │             │
+             │                             │             │
+             │                             │             │
+             ▼                             │             │
+┌────────────────────┐       ┌───────┐     │             │
+│ ¿Opción == salir?  │─ Sí ─►│  Fin  │     │             │
+└───────┬────────────┘       └───────┘     │             │
+        │ No                               │             │
+        ▼                                  │             │
+┌────────────────────┐       ┌───────────────────────┐   │
+│ ¿Opción válida?    │─ No ─►│ Mostrar mensaje error │   │
+└───────┬────────────┘       └───────────────────────┘   │
+        │ Sí                                             │
+        ▼                                                │
+┌────────────────────────────┐                           │
+│ Mostrar contenido sección  │                           │
+└───────┬────────────────────┘                           │
+        │                                                │
+        ▼                                                │
+┌────────────────────────────┐                           │
+│ Esperar Enter para seguir  │                           │
+└───────────┬────────────────┘                           │
+            │                                            │
+            └───────────────► (vuelve al WHILE) ──────────
+```
 
----
+## Sugerencias y mejoras aplicadas con Copilot, aceptadas y descartadas
 
-## Sugerencias y mejoras (aplicadas con Copilot, aceptadas y descartadas)
+Durante el desarrollo se consultaron sugerencias de Copilot y se aplicaron mejoras iterativas. A continuación se documentan las decisiones tomadas:
 
-Durante el desarrollo se consultaron sugerencias de Copilot. A continuación se listan las recomendaciones más relevantes y la decisión tomada.
+### ✅ **Sugerencias Aceptadas e Implementadas**
 
-1. Interfaz gráfica (tkinter) para navegar la documentación.
+1. **Interfaz gráfica moderna con CustomTkinter**
 
-   - Decisión: descartada por ahora.
-   - Razón: añade complejidad y dependencias; la entrega requiere un programa interactivo sencillo y portable en CLI.
+   - **Sugerencia**: Implementar GUI además de CLI
+   - **Implementación**: Aplicación completa con navegación lateral, temas claro/oscuro, y detección automática de archivos MD
+   - **Resultado**: Experiencia visual mejorada para usuarios no técnicos
 
-2. Inferencia automática de tipos y conversión de precios a decimal.
+2. **Aplicación web con Streamlit**
 
-   - Decisión: aceptada parcialmente.
-   - Implementación: el script incluye una inferencia básica de tipos (int/float/date/str) y muestra los tipos detectados para cada columna. La conversión a decimal (ej. dividir por 100) se dejó como mejora documentada para evitar suposiciones sobre la unidad monetaria en los CSV.
+   - **Sugerencia**: Crear versión web navegable
+   - **Implementación**: Interfaz compacta con sidebar, búsqueda, y carga de múltiples documentos
+   - **Resultado**: Acceso desde navegador sin instalación
 
-3. Pruebas unitarias (pytest) para validar lectura de CSVs.
+3. **Reorganización de estructura del proyecto**
 
-   - Decisión: aceptada como recomendación.
-   - Estado: no implementado en esta entrega por restricciones de tiempo; se incluye en `instrucciones_copilot.md` como tarea prioritaria.
+   - **Sugerencia del usuario**: Mover archivos principales a la raíz para facilitar acceso
+   - **Decisión inicial**: Archivos MD en raíz
+   - **Decisión final**: Volver a estructura organizada (`docs/`, `images/`, `utils/`)
+   - **Resultado**: Proyecto profesional y escalable
 
-4. Exportar reportes (HTML/PDF) desde la documentación.
+4. **Mejoras en experiencia CLI**
 
-   - Decisión: descartada en esta entrega (propuesta para fases posteriores).
+   - **Sugerencia**: Agregar limpieza de pantalla después de cada sección
+   - **Implementación**: Función `clear_screen()` multiplataforma
+   - **Resultado**: Navegación más limpia y profesional
 
-5. Manejo de CSVs grandes (muestreo y límites).
+5. **Priorización de archivos en GUI**
+   - **Sugerencia del usuario**: `documentacion.md` debería aparecer primero, no `README.md`
+   - **Implementación**: Función de ordenamiento personalizada con prioridades
+   - **Resultado**: Archivo principal más accesible
 
-   - Decisión: aceptada parcialmente.
-   - Implementación: el script muestrea las primeras N filas (configurable) en lugar de cargar archivos completos en memoria.
+### ❌ **Sugerencias Descartadas**
 
-6. Normalizar codificaciones (forzar UTF-8 y manejo de errores de decoding).
-   - Decisión: aceptada.
-   - Implementación: el programa abre archivos con encoding='utf-8' y captura excepciones para indicar problemas de codificación.
+1. **Funcionalidades de análisis de CSV**
 
-Registro de cambios y mejoras futuras recomendadas
+   - **Razón**: El proyecto evolucionó hacia explorador de documentación Markdown puro
+   - **Impacto**: Mayor enfoque y simplicidad del proyecto
 
-- Añadir pruebas unitarias para `read_csv_schema` y `load_documentation`.
-- Añadir opción para convertir y mostrar precios en unidades decimales, con parámetro de configuración (p. ej., 'centavos' true/false).
-- Agregar validación cruzada entre `productos.csv` y `detalle_ventas.csv` para detectar discrepancias en `precio_unitario`.
-- Implementar paginación y búsqueda avanzada en la CLI.
+2. **Múltiples formatos de exportación complejos**
+
+   - **Razón**: Añadiría complejidad innecesaria para el alcance actual
+   - **Alternativa**: Se mantuvieron las 3 interfaces como salidas principales
+
+3. **Base de datos para indexación**
+   - **Razón**: Overkill para documentos Markdown pequeños a medianos
+   - **Alternativa**: Parsing en memoria más simple y eficiente
+
+### 🔄 **Iteraciones y Refinamientos**
+
+- **Pseudocódigo actualizado**: Se corrigió para reflejar la implementación real (sin hardcoding de secciones)
+- **Rutas de archivos**: Múltiples ajustes para soportar estructura cambiante del proyecto
+- **Documentación**: Simplificación de secciones obsoletas y enfoque en funcionalidad actual
 
 ---
 
 ## Contacto
 
-Para más información o mejoras, contactar al responsable del proyecto (repositorio local en la carpeta del entregable).
+Para más información, contactar al responsable del proyecto:  
+Mónica Guantay - email: [mbguantay@gmail.com](mailto:mbguantay@gmail.com)

@@ -18,17 +18,17 @@ def get_project_paths():
     Obtiene las rutas base del proyecto según la nueva estructura.
     
     Returns:
-        tuple: (base_dir, data_dir, docs_dir, src_dir)
+        tuple: (base_dir, data_dir, docs_dir, utils_dir)
     """
-    # Obtener directorio base del proyecto (donde está el script principal)
-    current_file = os.path.abspath(__file__)  # src/utils.py
-    src_dir = os.path.dirname(current_file)   # src/
-    base_dir = os.path.dirname(src_dir)       # proyecto/
+    # Obtener directorio base del proyecto (donde están los scripts principales)
+    current_file = os.path.abspath(__file__)     # utils/utils.py
+    utils_dir = os.path.dirname(current_file)    # utils/
+    base_dir = os.path.dirname(utils_dir)        # proyecto/
     
     data_dir = os.path.join(base_dir, 'data')
     docs_dir = os.path.join(base_dir, 'docs')
     
-    return base_dir, data_dir, docs_dir, src_dir
+    return base_dir, data_dir, docs_dir, utils_dir
 
 
 def load_markdown(path: str) -> str:

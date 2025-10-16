@@ -3,6 +3,11 @@ import tkinter as tk
 from tkinter import messagebox, filedialog
 import os
 import re
+try:
+    from PIL import Image, ImageTk
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
 
 class DocumentationExplorerGUI:
     def __init__(self):
@@ -15,11 +20,16 @@ class DocumentationExplorerGUI:
         self.root.title("🏪 Tienda Aurelion - Explorador de Documentación")
         self.root.geometry("1400x900")
         self.root.minsize(1000, 600)
+        # Maximizar la ventana al inicio
+        self.root.state('zoomed')  # Para Windows
         
         # Variables de estado
         self.current_sections = {}
         self.current_title = ""
         self.search_results = []
+        self.current_image = None
+        self.current_image_path = None
+        self.image_window = None
         
         # Configurar la aplicación
         self.setup_layout()
@@ -91,7 +101,7 @@ class DocumentationExplorerGUI:
         nav_frame = ctk.CTkFrame(self.sidebar_scroll, corner_radius=8)
         nav_frame.pack(fill="x", pady=(0, 15))
         
-        nav_label = ctk.CTkLabel(nav_frame, text="🧭 Navegación", font=ctk.CTkFont(size=14, weight="bold"))
+        nav_label = ctk.CTkLabel(nav_frame, text="🧭 Navegación - Secciones encontradas", font=ctk.CTkFont(size=14, weight="bold"))
         nav_label.pack(pady=(10, 5))
         
         # Frame scrolleable para las secciones (más pequeño ahora)
@@ -172,7 +182,23 @@ class DocumentationExplorerGUI:
             wrap="word",
             corner_radius=8
         )
-        self.content_text.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 20))
+        self.content_text.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 10))
+        
+        # Frame para botones de imagen (inicialmente oculto)
+        self.image_button_frame = ctk.CTkFrame(self.content_frame, corner_radius=8)
+        self.image_button_frame.grid(row=2, column=0, sticky="ew", padx=20, pady=(0, 20))
+        self.image_button_frame.grid_remove()  # Ocultar inicialmente
+        
+        # Botón para ver imagen
+        self.view_image_btn = ctk.CTkButton(
+            self.image_button_frame,
+            text="🖼️ Ver Imagen del Diagrama",
+            command=self.on_view_image_click,
+            width=200,
+            height=40,
+            font=ctk.CTkFont(size=14, weight="bold")
+        )
+        self.view_image_btn.pack(pady=15)
         
     def create_status_bar(self):
         """Crear barra de estado."""
@@ -188,9 +214,10 @@ class DocumentationExplorerGUI:
         
     def discover_markdown_files(self):
         """Buscar archivos Markdown en el directorio docs/."""
+        # Buscar en la carpeta docs del proyecto
         docs_dir = os.path.join(os.getcwd(), 'docs')
         if not os.path.exists(docs_dir):
-            docs_dir = os.getcwd()
+            docs_dir = os.getcwd()  # fallback a la raíz si no existe docs
             
         md_files = []
         extensions = ['.md', '.markdown', '.MD', '.Markdown']
@@ -203,8 +230,18 @@ class DocumentationExplorerGUI:
                         md_files.append(full_path)
         except PermissionError:
             pass
-            
-        return sorted(md_files)
+        
+        # Ordenar con prioridad para documentacion.md
+        def sort_priority(file_path):
+            filename = os.path.basename(file_path).lower()
+            if filename == 'documentacion.md':
+                return 0  # Primera prioridad
+            elif filename == 'readme.md':
+                return 1  # Segunda prioridad
+            else:
+                return 2  # Resto en orden alfabético
+        
+        return sorted(md_files, key=sort_priority)
         
     def load_documentation(self):
         """Cargar la lista de archivos disponibles."""
@@ -333,6 +370,10 @@ class DocumentationExplorerGUI:
         content = self.current_sections.get(section_name, "")
         
         if content:
+            # Limpiar imagen anterior y ocultar botón de imagen por defecto
+            self.clear_current_image()
+            self.image_button_frame.grid_remove()
+            
             # Actualizar header
             self.content_header.configure(text=f"📖 {section_name}")
             
@@ -343,19 +384,60 @@ class DocumentationExplorerGUI:
             self.content_text.delete("1.0", "end")
             self.content_text.insert("1.0", formatted_content)
             
+            # Si hay una imagen cargada, agregar botón para verla
+            if hasattr(self, 'current_image') and self.current_image:
+                self.add_view_image_button()
+            
             # Actualizar status
             words = len(content.split())
             lines = len(content.split('\n'))
             self.update_status(f"📖 Mostrando: {section_name} ({words} palabras, {lines} líneas)")
         else:
             messagebox.showwarning("Sección vacía", f"La sección '{section_name}' está vacía.")
+    
+    def add_view_image_button(self):
+        """Mostrar botón para ver imagen."""
+        # Mostrar el frame de botones de imagen
+        self.image_button_frame.grid()
+    
+    def clear_current_image(self):
+        """Limpiar referencia de imagen actual."""
+        self.current_image = None
+        self.current_image_path = None
+    
+    def on_view_image_click(self):
+        """Manejar click del botón para ver imagen."""
+        if hasattr(self, 'current_image') and self.current_image and hasattr(self, 'current_image_path'):
+            self.show_image_window(self.current_image, "Diagrama de Flujo", self.current_image_path)
+        else:
+            messagebox.showinfo("Imagen", "No hay imagen disponible para mostrar")
             
     def format_content(self, content):
-        """Formatear el contenido para mejor visualización."""
+        """Formatear el contenido para mejor visualización, incluyendo imágenes."""
         lines = content.split('\n')
         formatted_lines = []
         
         for line in lines:
+            # Detectar imágenes markdown ![alt](path)
+            image_match = re.match(r'!\[([^\]]*)\]\(([^)]+)\)', line.strip())
+            if image_match and PIL_AVAILABLE:
+                alt_text, image_path = image_match.groups()
+                # Intentar mostrar la imagen
+                if self.try_display_image(image_path, alt_text):
+                    formatted_lines.append(f"✅ [IMAGEN CARGADA EXITOSAMENTE: {alt_text}]")
+                    formatted_lines.append(f"   📁 Archivo: {image_path}")
+                    formatted_lines.append(f"   �️ Una ventana separada mostrará la imagen automáticamente")
+                    # Mostrar la imagen automáticamente en ventana separada
+                    self.root.after(500, lambda: self.show_image_window_if_available())
+                    continue
+                else:
+                    formatted_lines.append(f"❌ [Imagen no encontrada: {alt_text}] - {image_path}")
+                    continue
+            elif image_match:  # PIL no disponible
+                alt_text, image_path = image_match.groups()
+                formatted_lines.append(f"🖼️ [Imagen (Pillow no instalado): {alt_text}] - {image_path}")
+                continue
+            
             # Convertir listas markdown a bullets
             if line.strip().startswith('- '):
                 formatted_lines.append(f"  • {line.strip()[2:]}")
@@ -369,6 +451,108 @@ class DocumentationExplorerGUI:
                 formatted_lines.append(line)
                 
         return '\n'.join(formatted_lines)
+    
+    def try_display_image(self, image_path, alt_text):
+        """Intentar mostrar una imagen en el área de contenido."""
+        try:
+            # Resolver ruta relativa desde el directorio del proyecto
+            if not os.path.isabs(image_path):
+                base_dir = os.getcwd()
+                
+                # Si la ruta empieza con ../ es relativa desde docs/
+                if image_path.startswith('../'):
+                    # Remover ../ y usar desde la raíz del proyecto
+                    clean_path = image_path[3:]  # Quitar ../
+                    full_path = os.path.join(base_dir, clean_path)
+                else:
+                    # Ruta relativa normal desde la raíz
+                    full_path = os.path.join(base_dir, image_path)
+            else:
+                full_path = image_path
+            
+            print(f"Intentando cargar imagen: {full_path}")  # Debug
+            
+            if not os.path.exists(full_path):
+                print(f"Imagen no encontrada en: {full_path}")  # Debug
+                return False
+            
+            # Cargar y redimensionar imagen
+            pil_image = Image.open(full_path)
+            
+            # Calcular tamaño para ajustar al área de contenido (máximo 800x600)
+            max_width, max_height = 800, 600
+            pil_image.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            
+            # Convertir a formato compatible con tkinter
+            tk_image = ImageTk.PhotoImage(pil_image)
+            
+            # Crear label para la imagen y agregarlo al content_text
+            # Nota: Como CTkTextbox no soporta imágenes, las mostraremos como texto indicativo
+            # y guardaremos la imagen para mostrarla en una ventana separada si es necesario
+            self.show_image_in_content(tk_image, alt_text, full_path)
+            
+            return True
+            
+        except Exception as e:
+            print(f"Error al cargar imagen {image_path}: {e}")
+            return False
+    
+    def show_image_in_content(self, tk_image, alt_text, image_path):
+        """Guardar referencia de imagen para uso posterior."""
+        # Guardar referencia de imagen para posible uso posterior
+        self.current_image = tk_image
+        self.current_image_path = image_path
+        
+        # Actualizar status bar con información de la imagen
+        self.update_status(f"🖼️ Imagen cargada: {alt_text} ({tk_image.width()}x{tk_image.height()}px)")
+        
+        return True
+    
+    def show_image_window_if_available(self):
+        """Mostrar ventana de imagen si hay una imagen cargada."""
+        if hasattr(self, 'current_image') and self.current_image and hasattr(self, 'current_image_path'):
+            self.show_image_window(self.current_image, "Diagrama de Flujo", self.current_image_path)
+    
+    def show_image_window(self, tk_image, alt_text, image_path):
+        """Mostrar imagen en una ventana separada."""
+        if hasattr(self, 'image_window') and self.image_window and self.image_window.winfo_exists():
+            self.image_window.destroy()
+        
+        # Crear ventana separada para la imagen
+        self.image_window = ctk.CTkToplevel(self.root)
+        self.image_window.title(f"🖼️ {alt_text}")
+        self.image_window.geometry("1000x800")
+        self.image_window.resizable(True, True)
+        
+        # Frame principal con scroll si es necesario
+        main_frame = ctk.CTkFrame(self.image_window)
+        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # Título de la imagen
+        title_label = ctk.CTkLabel(main_frame, text=f"📷 {alt_text}", 
+                                  font=ctk.CTkFont(size=16, weight="bold"))
+        title_label.pack(pady=(10, 5))
+        
+        # Frame para la imagen con fondo blanco
+        image_frame = tk.Frame(main_frame, bg='white', relief='solid', bd=1)
+        image_frame.pack(padx=20, pady=10, fill="both", expand=True)
+        
+        # Label con la imagen
+        image_label = tk.Label(image_frame, image=tk_image, bg='white')
+        image_label.image = tk_image  # Mantener referencia para evitar garbage collection
+        image_label.pack(padx=10, pady=10, expand=True)
+        
+        # Información de la imagen
+        info_text = f"📁 Archivo: {os.path.basename(image_path)}\n📐 Dimensiones: {tk_image.width()} × {tk_image.height()} píxeles"
+        info_label = ctk.CTkLabel(main_frame, text=info_text, 
+                                 font=ctk.CTkFont(size=12))
+        info_label.pack(pady=(5, 10))
+        
+        # Botón para cerrar
+        close_button = ctk.CTkButton(main_frame, text="Cerrar", 
+                                    command=self.image_window.destroy,
+                                    width=100)
+        close_button.pack(pady=(0, 10))
         
     def search_documentation(self, event=None):
         """Buscar texto en la documentación."""

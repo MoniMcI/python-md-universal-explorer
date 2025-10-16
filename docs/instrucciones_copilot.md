@@ -32,164 +32,345 @@ Se ajustó el programa para que la única fuente sea `DOCUMENTACION.md` y no exp
 - `DOCUMENTACION.md` como fuente única de verdad
 - Interfaz centrada en navegación de secciones
 
-## Prompt: Conversión a Jupyter Notebook
+## Prompt: Implementación de menú numerado inicial
 
 ### Prompt del usuario
 
-"Necesito que el programa de python esté en un notebook jupyter. Podes cambiarlo?"
+"en vez de usar ipywidgets, para no instalarlo, es que al ejecutar el programa muestre como una lista las secciones detectadas, como un menu, con numeros, y que el usuario selecciones el numero de la seccion que desea ver y que a continuacion, el programa lo muestre"
 
 ### Respuesta del asistente
 
-Se convirtió el script CLI a `consulta_documentacion.ipynb` preservando toda la lógica pero adaptándola al entorno de notebook con capacidades de renderizado HTML.
+Se implementó un sistema de menú numerado que detecta automáticamente las secciones del documento markdown y permite al usuario seleccionar por número.
 
 ### Modificaciones importantes
 
-- Conversión de CLI a formato .ipynb
-- Aprovechamiento de IPython.display para HTML
-- Mantenimiento de funcionalidad completa
-
-## Prompt: Eliminación de ipywidgets
-
-### Prompt del usuario
-
-"en vez de usar ipywidgets ... que muestre como una lista las secciones detectadas, como un menu, con numeros..."
-
-### Respuesta del asistente
-
-Se reemplazó la interfaz con `ipywidgets` por un menú numerado simple para evitar dependencias externas, manteniendo solo la biblioteca estándar e IPython.display.
-
-### Modificaciones importantes
-
+- Detección automática de secciones mediante `## `
+- Menú numerado interactivo
+- Selección por entrada numérica
 - Eliminación de dependencias externas
-- Implementación de menú numerado con entrada de teclado
-- Detección automática de secciones por encabezados `## `
 
-## Prompt: Mejora de UX con limpieza de pantalla
+## Prompt: Mejora de visualización con limpieza de pantalla
 
 ### Prompt del usuario
 
-"me gustaria que cuando el usuario escoje el numero del menu, borre la salida, o vuelva a escribir ... cada vez que escoje un numero que borre lo que estaba antes y lo vuelva a mostrar"
+"me gustaria que cuando el usuario escoje el numero del menu, borre la salida, o vuelva a escribir en todo caso el menu y abajo la salida que pidio... porque en este momento queda ahí. Cada vez que escoje un numero que borre lo que estaba antes y lo vuelva a mostrar"
 
 ### Respuesta del asistente
 
-Se implementó `clear_output(wait=True)` y renderizado HTML scrolleable. Se reimprime el menú en cada iteración manteniendo la interfaz limpia.
+Se implementó sistema de limpieza de pantalla usando `clear_screen()` multiplataforma para mantener la interfaz ordenada.
 
 ### Modificaciones importantes
 
-- Uso de `clear_output()` para limpiar pantalla
-- Renderizado HTML con contenedor scrolleable
-- Re-impresión del menú en cada iteración
+- Función `clear_screen()` para Windows/Unix
+- Limpieza automática entre selecciones
+- Interfaz más limpia y profesional
 
-## Prompt: Corrección de bug de visualización
+## Prompt: Corrección de visibilidad del menú
 
 ### Prompt del usuario
 
-"al elegir una opción no se mostró la sección" (bug report)
+"prefiero que el menu se mantenga visible, y abajo aparezca lo que se pidio, probé la modificacion y no muestra ahora la seccion elegida por el usuario"
 
 ### Respuesta del asistente
 
-Se añadió debug temporal, se corrigió un NameError en función indefinida, y posteriormente se removió el debug. Se añadió celda diagnóstica para verificación.
+Se ajustó la lógica para mantener el menú visible permanentemente y mostrar el contenido debajo, corrigiendo problemas de visualización.
 
 ### Modificaciones importantes
 
-- Corrección de NameError por función indefinida
-- Implementación de celda diagnóstica
-- Mejora en manejo de errores
+- Menú permanentemente visible
+- Contenido mostrado debajo del menú
+- Corrección de bugs de visualización
 
-## Prompt: Solución del bug de doble-clic
+## Prompt: Corrección del comando de salida
 
 ### Prompt del usuario
 
-"hay que seleccionar dos veces para que aparezca la sección" (bug report)
+"el menu me muestra la opcion 0 para salir, Puse el 0 y no sale, me sigue pidiendo que ingrese una opcion."
 
 ### Respuesta del asistente
 
-Se identificó que el problema era una pausa extra (`input('Presione Enter...')`) que consumía la siguiente entrada. Se eliminó la pausa y se mantuvo `last_section_html` para renderizar la sección en la misma iteración.
+Se corrigió la lógica del bucle principal para que la opción 0 termine correctamente el programa.
 
 ### Modificaciones importantes
 
-- Eliminación de pausas intermedias que interferían
-- Implementación de `last_section_html` para persistencia
-- Solución definitiva del problema de doble-clic
+- Corrección de la condición de salida
+- Validación de entrada de usuario
+- Manejo robusto de opciones
+
+## Prompt: Solicitud de versión web con imágenes
+
+### Prompt del usuario
+
+"como hago para hacer una pagina web de este proyecto? que muestre imagenes tambien porque voy a poner un diagrama de flujo que muestre el seudocodigo"
+
+### Respuesta del asistente
+
+Se inició el desarrollo de la versión web con Streamlit, específicamente diseñada para mostrar imágenes de diagramas de flujo.
+
+### Modificaciones importantes
+
+- Planificación de interfaz web
+- Soporte específico para diagramas de flujo
+- Preparación para visualización de imágenes
+
+## Prompt: Sugerencia de navegación lateral
+
+### Prompt del usuario
+
+"que te parece que el programa detecte las secciones principales del documento y las escriba como opciones en una navegacion lateral?"
+
+### Respuesta del asistente
+
+Se implementó navegación lateral inteligente que detecta automáticamente secciones y las presenta como opciones navegables.
+
+### Modificaciones importantes
+
+- Detección automática de estructura de documento
+- Navegación lateral dinámica
+- Interfaz más intuitiva y moderna
+
+## Prompt: Desarrollo de interfaz GUI moderna
+
+### Prompt del usuario
+
+"customtkinter?"
+
+### Respuesta del asistente
+
+Se desarrolló una interfaz gráfica moderna usando CustomTkinter (`md_explorer_gui.py`) que incluye:
+
+- Ventana principal con layout profesional
+- Sidebar de navegación con lista de secciones
+- Área de contenido principal con scroll
+- Funciones de búsqueda avanzada
+- Exportación de secciones
+- Tema claro/oscuro intercambiable
+- Soporte para imágenes con visualización en popup
+
+### Modificaciones importantes
+
+- Implementación completa de GUI con CustomTkinter
+- Scroll real nativo para contenido largo
+- Interfaz de búsqueda integrada
+- Sistema de temas dinámico
+- Manejo de imágenes con Pillow
+
+## Prompt: Solicitud de interfaz web con Streamlit
+
+### Prompt del usuario
+
+"Solicitud de crear una versión web usando Streamlit"
+
+### Respuesta del asistente
+
+Se creó `universal_md_explorer.py` con Streamlit que proporciona:
+
+- Interfaz web moderna y responsiva
+- Navegación lateral con radio buttons
+- Visualización nativa de imágenes integrada
+- Explorador de datos CSV con pandas
+- Carga de archivos markdown externos
+- Métricas de documentos en tiempo real
+- Diseño adaptable a cualquier dispositivo
+
+### Modificaciones importantes
+
+- Aplicación web completa con Streamlit
+- Integración de explorador CSV con vista previa
+- Navegación por pestañas (Contenido/Datos)
+- Estilos CSS personalizados
+- Sistema de métricas automáticas
+
+## Prompt: Optimización de visualización PNG en Streamlit
+
+### Prompt del usuario
+
+"corregir el de streamlit para que se vea la imagen png unicamente"
+
+### Respuesta del asistente
+
+Se implementó detección inteligente de imágenes PNG en Streamlit para mostrar únicamente la imagen sin texto adicional, usando `st.image()` con ancho completo.
+
+### Modificaciones importantes
+
+- Función `detect_and_process_images()` para detección de PNG
+- Visualización optimizada solo para archivos PNG
+- Renderizado con `st.image()` y `use_column_width=True`
+- Separación del contenido de imagen del texto
+
+## Prompt: Integración de Pillow y manejo diferenciado
+
+### Prompt del usuario
+
+"si, agreguemos pillow, y ademas, que si puede mostrar la imagen, que muestre el png, sino se puede, que muestre el que es texto, y en la version cli, que no se muestre la linea del png, sino directamente el diagrama que esta en texto"
+
+### Respuesta del asistente
+
+Se implementó Pillow para visualización de imágenes en GUI y sistema diferenciado por plataforma:
+
+- **GUI**: Visualización real de PNG con Pillow y popup windows
+- **CLI**: Filtrado de referencias PNG, solo texto del diagrama
+- **Web**: Visualización nativa integrada
+
+### Modificaciones importantes
+
+- Instalación y configuración de Pillow>=8.0.0
+- Flag `PIL_AVAILABLE` para detección de capacidades
+- Función `filter_content_for_cli()` para CLI
+- Sistema de popup windows en GUI
+- Manejo diferenciado por interfaz
+
+## Prompt: Confirmación de estabilidad y planificación avanzada
+
+### Prompt del usuario
+
+"bueno, al parecer ahora funciona... lo que me gustaria ahora es dejar esta version asi como esta... para hacer algo un poco mas avanzado, se puede hacer con tkinter, me puedes explicar qué podriamos hacer? y luego hacemos la version de streamlit que esta ya lista, solo necesita pequeños ajustes..."
+
+### Respuesta del asistente
+
+Se consolidó la versión CLI estable y se planificó evolución hacia GUI moderna con CustomTkinter y optimización final de Streamlit.
+
+### Modificaciones importantes
+
+- Consolidación de CLI como base estable
+- Planificación de GUI avanzada
+- Roadmap para optimización de Streamlit
+- Preparación para sistema multi-interfaz
+
+## Prompt: Corrección de visualización de imágenes
+
+### Prompt del usuario
+
+"no se ve la imagen, me gustaria ver el png"
+
+### Respuesta del asistente
+
+Se implementó visualización completa de imágenes PNG en la GUI:
+
+- Detección automática de rutas de imagen
+- Carga con Pillow y conversión a tkinter
+- Ventanas popup dedicadas para imágenes
+- Redimensionamiento inteligente
+- Soporte para rutas relativas
+
+### Modificaciones importantes
+
+- Integración completa de Pillow para imágenes
+- Sistema de popup windows para visualización
+- Resolución automática de rutas de imagen
+- Manejo robusto de errores de carga
+
+## Prompt: Mejoras en interfaz de imágenes
+
+### Prompt del usuario
+
+"en vez de poner el doble click para ver la imagen se puede poner un boton? y que cuando haga click se abra el popup con la imagen? la imagen se ve muy pequeña y otra cosa, hay forma de que el gui comience maximizado?"
+
+### Respuesta del asistente
+
+Se implementaron mejoras significativas en la GUI:
+
+- Reemplazo de doble-click por botón elegante
+- Ventana GUI que inicia maximizada automáticamente
+- Imágenes más grandes (800x600 en popup de 1000x800)
+- Botón que aparece/desaparece según disponibilidad de imagen
+- Control inteligente de estado de interfaz
+
+### Modificaciones importantes
+
+- Botón dedicado "🖼️ Ver Imagen del Diagrama"
+- Ventana maximizada al inicio con `state('zoomed')`
+- Imágenes redimensionadas a 800x600 píxeles
+- Frame de botones dinámico con `grid()`/`grid_remove()`
 
 ## Estado actual del proyecto
 
 ### Archivos principales
 
-- ✅ **CLI funcional:** `consulta_documentacion.py` - Formato simple y limpio
-- ✅ **GUI moderna:** `md_explorer_gui.py` - CustomTkinter con scroll real
-- ✅ **Notebook:** `consulta_documentacion.ipynb` - HTML scrolleable en Jupyter
-- ✅ **Web app:** `src/universal_md_explorer.py` - Streamlit (pendiente ajustes)
+- ✅ **CLI funcional:** `consulta_documentacion.py` - Interfaz terminal limpia
+- ✅ **GUI moderna:** `md_explorer_gui.py` - CustomTkinter maximizada con botones
+- ✅ **Web app:** `universal_md_explorer.py` - Streamlit con visualización PNG optimizada
 - ✅ **Documentación:** `docs/documentacion.md` - Fuente única de verdad
+- ✅ **Utilidades:** `utils/utils.py` - Funciones compartidas
 
 ### Características implementadas
 
 - Detección automática de secciones por `## `
-- Menú numerado intuitivo
+- Tres interfaces completas (CLI, GUI, Web)
+- Visualización optimizada de imágenes PNG
 - Búsqueda en documentación
 - Exportación de secciones
 - Temas claro/oscuro (GUI)
-- Scroll real (GUI y Notebook)
+- Exploración de datos CSV (Web)
 - Manejo robusto de encoding
 
 ## Lecciones aprendidas importantes
 
 ### Diferencias entre entornos
 
-- **Notebook:** HTML real con scroll real mediante `display(HTML())`
-- **CLI:** Solo texto plano, sin capacidades HTML
-- **GUI:** Scroll real nativo con CustomTkinter
+- **CLI:** Texto plano, filtrado de referencias PNG
+- **GUI:** Ventana maximizada, popup de imágenes grandes
+- **Web:** Visualización nativa integrada de imágenes
 
 ### Decisiones de diseño acertadas
 
-- `DOCUMENTACION.md` como fuente única
-- Evitar dependencias externas innecesarias
+- `documentacion.md` como fuente única
+- Tres interfaces complementarias
 - Interfaz simple y directa
 - Manejo de errores robusto
+- Visualización específica por plataforma
 
 ### Evolución técnica
 
-1. **CLI inicial** → funcional pero limitado
-2. **Notebook con widgets** → demasiadas dependencias
-3. **Notebook simple** → HTML scrolleable efectivo
-4. **GUI moderna** → experiencia completa con CustomTkinter
+1. **CLI inicial** → funcional con filtrado de imágenes
+2. **GUI moderna** → CustomTkinter con visualización completa
+3. **Web app** → Streamlit con imágenes integradas
+4. **Sistema unificado** → Tres herramientas complementarias
 
 ## Próximos pasos recomendados
 
-### Tareas pendientes
+### Tareas completadas
 
-- [ ] Ajustar versión Streamlit para completar el conjunto
-- [ ] Documentar uso de cada versión
-- [ ] Crear guía de instalación unificada
+- ✅ Tres interfaces funcionales y optimizadas
+- ✅ Visualización de imágenes en todas las plataformas
+- ✅ Documentación actualizada y completa
+- ✅ Estructura de proyecto profesional
 
 ### Mejoras opcionales
 
 - [ ] Paginación para secciones muy largas
 - [ ] Validación de tamaños máximos en archivos
-- [ ] Internacionalización (detección de encoding mejorada)
 - [ ] Testing automatizado básico
+- [ ] Guía de instalación detallada
 
 ## Notas técnicas
 
 ### Principios mantenidos
 
 - Mensajes en español
-- Sin dependencias innecesarias
-- Enfoque en UX simple
-- `DOCUMENTACION.md` como única fuente
+- Dependencias mínimas necesarias
+- Enfoque en UX específica por plataforma
+- `documentacion.md` como única fuente
 
-### Estructura de archivos
+### Estructura de archivos actualizada
 
 ```
 proyecto/
-├── consulta_documentacion.py     # CLI simple
-├── md_explorer_gui.py            # GUI moderna
-├── consulta_documentacion.ipynb  # Notebook
-├── src/universal_md_explorer.py  # Streamlit
-├── docs/documentacion.md         # Fuente única
-└── data/                         # CSVs originales
-    ├── clientes.csv
-    ├── productos.csv
-    ├── ventas.csv
-    └── detalle_ventas.csv
+├── data/                         # Datos CSV originales
+│   ├── clientes.csv
+│   ├── productos.csv
+│   ├── ventas.csv
+│   └── detalle_ventas.csv
+├── docs/                         # Documentación
+│   ├── documentacion.md
+│   └── instrucciones_copilot.md
+├── images/                       # Imágenes del proyecto
+│   └── diagrama-flujo.png
+├── utils/                        # Utilidades compartidas
+│   └── utils.py
+├── consulta_documentacion.py     # CLI con filtrado PNG
+├── md_explorer_gui.py            # GUI maximizada con botones
+├── universal_md_explorer.py      # Web con PNG optimizado
+├── requirements.txt              # Dependencias
+└── README.md                     # Documentación principal
 ```

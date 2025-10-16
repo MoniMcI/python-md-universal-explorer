@@ -8,17 +8,18 @@ de forma interactiva, con detección automática de estructura y navegación lat
 Adaptado para la nueva estructura de proyecto con carpetas organizadas.
 
 Uso:
-    streamlit run src/universal_md_explorer.py
+    streamlit run universal_md_explorer.py
 """
 
 import streamlit as st
 import os
 import sys
+import re
 
-# Añadir el directorio src al path para importar utils
+# Añadir el directorio utils al path para importar utils
 current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = os.path.dirname(current_dir)
-sys.path.append(current_dir)
+utils_dir = os.path.join(current_dir, 'utils')
+sys.path.append(utils_dir)
 
 from utils import (
     get_project_paths,
@@ -147,6 +148,13 @@ def display_csv_explorer():
     """Muestra el explorador de archivos CSV."""
     st.markdown("## 📊 Explorador de Datos CSV")
     
+    # Aclaración sobre los datos
+    st.info("""
+    📋 **Aclaración importante:** Esta sección muestra únicamente los datos proporcionados de la **Tienda Aurelion** 
+    con los que se trabajará más adelante en el análisis. Los datasets incluyen información de clientes, productos, 
+    ventas y detalles de ventas que servirán como base para el proyecto de análisis de datos.
+    """)
+    
     _, data_dir, _, _ = get_project_paths()
     csv_files = discover_csv_files(data_dir)
     
@@ -213,6 +221,98 @@ def display_csv_explorer():
                 st.error(f"❌ Error al leer CSV: {str(e)}")
 
 
+def detect_and_process_images(content: str) -> tuple:
+    """
+    Detecta imágenes en el contenido Markdown y las procesa separadamente.
+    
+    Args:
+        content (str): Contenido Markdown
+        
+    Returns:
+        tuple: (tiene_imagen, ruta_imagen, contenido_sin_imagen)
+    """
+    # Patrón para detectar imágenes markdown ![alt](path)
+    image_pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
+    image_match = re.search(image_pattern, content)
+    
+    if image_match:
+        alt_text, image_path = image_match.groups()
+        
+        # Resolver ruta relativa si es necesario
+        if image_path.startswith('../'):
+            # Ruta relativa desde docs hacia images
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            resolved_path = os.path.join(current_dir, image_path.replace('../', ''))
+        else:
+            resolved_path = image_path
+        
+        # Verificar si el archivo existe
+        if os.path.exists(resolved_path):
+            # Remover la línea de imagen del contenido
+            content_without_image = re.sub(image_pattern, '', content).strip()
+            return True, resolved_path, content_without_image
+    
+    return False, None, content
+
+
+def render_section_content(section_content: str, selected_section: str):
+    """
+    Renderiza el contenido de una sección, manejando imágenes de forma especial.
+    
+    Args:
+        section_content (str): Contenido de la sección
+        selected_section (str): Nombre de la sección seleccionada
+    """
+    # Detectar si hay imagen en esta sección
+    has_image, image_path, text_content = detect_and_process_images(section_content)
+    
+    if has_image and image_path:
+        # Si hay imagen, mostrar solo la imagen (especialmente para PNG)
+        if image_path.lower().endswith('.png'):
+            st.markdown(f"""
+            <div class="section-content">
+                <h2>🖼️ {selected_section}</h2>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            try:
+                # Mostrar la imagen centrada y con tamaño apropiado
+                st.image(image_path, caption=f"Diagrama: {selected_section}", use_column_width=True)
+                
+                # Solo mostrar texto adicional si hay contenido significativo
+                if text_content and len(text_content.strip()) > 50:
+                    st.markdown("### 📝 Descripción adicional:")
+                    clean_content = clean_markdown_content(text_content)
+                    st.markdown(clean_content, unsafe_allow_html=True)
+                    
+            except Exception as e:
+                st.error(f"❌ Error al cargar imagen: {str(e)}")
+                st.info(f"📁 Ruta de imagen: {image_path}")
+        else:
+            # Para otros tipos de imagen, mostrar contenido normal
+            st.markdown(f"""
+            <div class="section-content">
+                <h2>📖 {selected_section}</h2>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            clean_content = clean_markdown_content(section_content)
+            st.markdown(clean_content, unsafe_allow_html=True)
+    else:
+        # Contenido normal sin imagen
+        st.markdown(f"""
+        <div class="section-content">
+            <h2>📖 {selected_section}</h2>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        clean_content = clean_markdown_content(section_content)
+        if clean_content.strip():
+            st.markdown(clean_content, unsafe_allow_html=True)
+        else:
+            st.info("Esta sección está vacía.")
+
+
 def on_section_change():
     """Callback para cuando cambia la sección seleccionada."""
     if 'section_radio' in st.session_state:
@@ -231,7 +331,7 @@ def main():
         st.session_state.current_document = None
     
     # Obtener rutas del proyecto
-    base_dir, data_dir, docs_dir, src_dir = get_project_paths()
+    base_dir, data_dir, docs_dir, utils_dir = get_project_paths()
     
     # Descubrir archivos Markdown en docs/
     markdown_files = discover_markdown_files(docs_dir)
@@ -358,18 +458,8 @@ def main():
                 if selected_section in sections:
                     section_content = sections[selected_section]
                     
-                    st.markdown(f"""
-                    <div class="section-content">
-                        <h2>📖 {selected_section}</h2>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # Renderizar contenido
-                    clean_content = clean_markdown_content(section_content)
-                    if clean_content.strip():
-                        st.markdown(clean_content, unsafe_allow_html=True)
-                    else:
-                        st.info("Esta sección está vacía.")
+                    # Usar la nueva función para renderizar contenido
+                    render_section_content(section_content, selected_section)
             else:
                 # Sin secciones definidas
                 st.warning("⚠️ Este documento no tiene secciones definidas (##). Mostrando contenido completo:")
@@ -392,24 +482,58 @@ def main():
         ```
         proyecto/
         ├── data/                    # Archivos CSV de datos
-        ├── docs/                    # Documentación en Markdown  
-        ├── src/                     # Código fuente Python
-        ├── consulta_documentacion.py
-        └── README.md
+        │   ├── clientes.csv
+        │   ├── detalle_ventas.csv
+        │   ├── productos.csv
+        │   └── ventas.csv
+        ├── docs/                    # Documentación en Markdown
+        │   ├── documentacion.md
+        │   └── instrucciones_copilot.md
+        ├── images/                  # Imágenes del proyecto
+        │   └── diagrama-flujo.png
+        ├── utils/                   # Funciones auxiliares Python
+        │   └── utils.py
+        ├── consulta_documentacion.py    # CLI - Interfaz línea de comandos
+        ├── md_explorer_gui.py           # GUI - Interfaz gráfica con CustomTkinter
+        ├── universal_md_explorer.py     # WEB - Esta aplicación Streamlit
+        ├── requirements.txt             # Dependencias del proyecto
+        └── README.md                    # Documentación principal
         ```
         
         ### 🚀 Cómo usar
         
-        1. **📄 Explorar documentación**: Selecciona un archivo .md de la carpeta `docs/`
-        2. **📊 Explorar datos**: Ve a la pestaña "Explorar Datos CSV" para ver archivos en `data/`
-        3. **📤 Subir temporal**: Usa el uploader para ver cualquier archivo Markdown
+        **📋 Tres Interfaces Disponibles:**
         
-        ### ✨ Características
-        - 🔍 Detección automática de título y secciones
-        - 🧭 Navegación lateral inteligente
-        - 📊 Vista previa de datos CSV con pandas
-        - 📱 Diseño responsive
-        - 🎨 Interfaz moderna y limpia
+        1. **�️ CLI (Línea de Comandos)**: `python consulta_documentacion.py`
+           - Interfaz simple de terminal con menús numerados
+           - Ideal para uso rápido y automatización
+        
+        2. **🖼️ GUI (Interfaz Gráfica)**: `python md_explorer_gui.py`
+           - Aplicación de escritorio con CustomTkinter
+           - Ventana maximizada con visualización de imágenes en popup
+           - Tema claro/oscuro, búsqueda avanzada
+        
+        3. **🌐 WEB (Esta Aplicación)**: `streamlit run universal_md_explorer.py`
+           - Interfaz web moderna y responsiva
+           - Visualización nativa de imágenes integrada
+           - Exploración de datos CSV con pandas
+        
+        **📖 Funcionalidades Comunes:**
+        - � Explorar documentación: Selecciona archivos .md de la carpeta `docs/`
+        - 📊 Explorar datos: Ver archivos CSV en la carpeta `data/`
+        - � Búsqueda de contenido en tiempo real
+        - 💾 Exportación de secciones
+        
+        ### ✨ Características de la Interfaz Web
+        - 🔍 Detección automática de título y secciones markdown
+        - 🧭 Navegación lateral inteligente con radio buttons
+        - 📊 Vista previa de datos CSV con análisis usando pandas
+        - 🖼️ Visualización optimizada de imágenes PNG (solo imagen, sin texto extra)
+        - 📱 Diseño responsive que se adapta a cualquier pantalla
+        - 🎨 Interfaz moderna con estilos CSS personalizados
+        - 📤 Carga de archivos markdown externos temporales
+        - 💾 Métricas de documentos (palabras, líneas, secciones, tamaño)
+        - 🔄 Actualización automática de contenido sin recargar página
         """)
         
         # Mostrar estado actual de carpetas
