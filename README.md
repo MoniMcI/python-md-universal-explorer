@@ -83,7 +83,7 @@ streamlit run universal_md_explorer.py
 
 Puedes probar la aplicacion web directamente en este enlace:
 
-🌐 **[Ver Aplicación Web en vivo](https://python-md-universal-explorer-monimci.streamlit.app/)**
+🌐 **[Ver Aplicación Web en vivo](https://python-md-universal-explorer.streamlit.app/)**
 
 ## 📁 Estructura del Proyecto
 
